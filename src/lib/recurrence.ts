@@ -18,6 +18,15 @@ export function toISODate(d: Date): string {
   return format(d, "yyyy-MM-dd");
 }
 
+/** Robustes Parsen: faellt bei ungueltigem Wert auf heute zurueck (kein Crash). */
+export function parseSafe(iso?: string): Date {
+  if (iso) {
+    const d = parseISO(iso);
+    if (!isNaN(d.getTime())) return startOfDay(d);
+  }
+  return startOfDay(new Date());
+}
+
 export function addCadence(date: Date, cadence: Cadence): Date {
   switch (cadence) {
     case "taeglich":
@@ -39,7 +48,7 @@ export function addCadence(date: Date, cadence: Cadence): Date {
 
 /** Naechstes Auftreten >= ref (Tagesgenau). Bei "einmalig" das Startdatum selbst. */
 export function nextOccurrence(start: string, cadence: Cadence, ref: Date = new Date()): string {
-  let d = startOfDay(parseISO(start));
+  let d = parseSafe(start);
   if (cadence === "einmalig") return toISODate(d);
   const r = startOfDay(ref);
   let guard = 0;
@@ -51,7 +60,7 @@ export function nextOccurrence(start: string, cadence: Cadence, ref: Date = new 
 export function occurrencesWithin(start: string, cadence: Cadence, days: number): string[] {
   const out: string[] = [];
   const limit = addDays(startOfDay(new Date()), days);
-  let d = startOfDay(parseISO(nextOccurrence(start, cadence)));
+  let d = parseSafe(nextOccurrence(start, cadence));
   let guard = 0;
   while (!isBefore(limit, d) && guard++ < 1000) {
     out.push(toISODate(d));
@@ -70,5 +79,5 @@ export function yearlyAmount(betrag: number, cadence: Cadence): number {
 }
 
 export function daysUntil(iso: string): number {
-  return differenceInCalendarDays(startOfDay(parseISO(iso)), startOfDay(new Date()));
+  return differenceInCalendarDays(parseSafe(iso), startOfDay(new Date()));
 }

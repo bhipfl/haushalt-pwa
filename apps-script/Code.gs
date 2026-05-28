@@ -167,7 +167,9 @@ function readSheet(name) {
     .map((row) => {
       const obj = {};
       schema.forEach(([key, type], i) => {
-        const v = row[i];
+        let v = row[i];
+        // Sheets wandelt Datums-Strings automatisch in Date-Werte -> zurueck zu yyyy-MM-dd
+        if (v instanceof Date) v = Utilities.formatDate(v, Session.getScriptTimeZone(), "yyyy-MM-dd");
         if (type === "b") obj[key] = v === true || v === "TRUE" || v === "true";
         else if (type === "n") obj[key] = v === "" || v === null ? 0 : Number(v);
         else if (v !== "" && v !== null) obj[key] = String(v);

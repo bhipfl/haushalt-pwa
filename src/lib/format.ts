@@ -1,6 +1,6 @@
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { daysUntil } from "./recurrence";
+import { daysUntil, parseSafe } from "./recurrence";
 
 const eurFmt = new Intl.NumberFormat("de-DE", {
   style: "currency",
@@ -16,13 +16,13 @@ export const eurCompact = (n: number) =>
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
 
-export const formatDate = (iso: string) => format(parseISO(iso), "dd.MM.yyyy", { locale: de });
+export const formatDate = (iso: string) => format(parseSafe(iso), "dd.MM.yyyy", { locale: de });
 
-export const formatDateShort = (iso: string) => format(parseISO(iso), "dd. MMM", { locale: de });
+export const formatDateShort = (iso: string) => format(parseSafe(iso), "dd. MMM", { locale: de });
 
-export const formatMonth = (iso: string) => format(parseISO(iso), "MMMM yyyy", { locale: de });
+export const formatMonth = (iso: string) => format(parseSafe(iso), "MMMM yyyy", { locale: de });
 
-export const weekday = (iso: string) => format(parseISO(iso), "EEEE", { locale: de });
+export const weekday = (iso: string) => format(parseSafe(iso), "EEEE", { locale: de });
 
 /** "heute", "morgen", "in 3 Tagen", "vor 2 Tagen" */
 export function relativeDay(iso: string): string {
