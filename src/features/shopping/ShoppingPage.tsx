@@ -5,6 +5,7 @@ import { useAuth } from "../../lib/auth";
 import { newId } from "../../lib/id";
 import { todayISO } from "../../lib/recurrence";
 import { shopLocationOrder, shopLocations } from "../../lib/constants";
+import { guessLocation } from "../../lib/categorize";
 import type { ShoppingItem, ShopLocation } from "../../lib/types";
 import { Button, EmptyState, IconButton } from "../../components/ui";
 import { Dot } from "../../components/Avatar";
@@ -19,11 +20,14 @@ export function ShoppingPage() {
   const { memberId } = useAuth();
 
   const [name, setName] = useState("");
-  const [ort, setOrt] = useState<ShopLocation>(
-    (localStorage.getItem(LAST_ORT) as ShopLocation) || "obst_gemuese"
+  const [ortChoice, setOrtChoice] = useState<ShopLocation | "auto">(
+    (localStorage.getItem(LAST_ORT) as ShopLocation | "auto") || "auto"
   );
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [showDone, setShowDone] = useState(false);
+
+  const detected = guessLocation(name);
+  const effectiveOrt: ShopLocation = ortChoice === "auto" ? detected ?? "sonstiges" : ortChoice;
 
   const open = data.shopping.filter((s) => !s.erledigt);
   const done = data.shopping.filter((s) => s.erledigt);
@@ -43,13 +47,13 @@ export function ShoppingPage() {
     e.preventDefault();
     const n = name.trim();
     if (!n) return;
-    localStorage.setItem(LAST_ORT, ort);
+    localStorage.setItem(LAST_ORT, ortChoice);
     mutate.mutate({
       action: "shopping.add",
       payload: {
         id: newId(),
         name: n,
-        ort,
+        ort: effectiveOrt,
         erledigt: false,
         addedBy: memberId ?? undefined,
         createdAt: todayISO(),
@@ -83,13 +87,26 @@ export function ShoppingPage() {
             <option key={s} value={s} />
           ))}
         </datalist>
-        <SelectInput value={ort} onChange={(e) => setOrt(e.target.value as ShopLocation)}>
+        <SelectInput
+          value={ortChoice}
+          onChange={(e) => setOrtChoice(e.target.value as ShopLocation | "auto")}
+        >
+          <option value="auto">✨ Automatisch einsortieren</option>
           {shopLocationOrder.map((loc) => (
             <option key={loc} value={loc}>
               {shopLocations[loc].emoji} {shopLocations[loc].label}
             </option>
           ))}
         </SelectInput>
+        {ortChoice === "auto" && name.trim() && (
+          <p className="px-1 text-xs text-slate-400">
+            {detected ? "Kommt in" : "Nicht erkannt →"} {shopLocations[effectiveOrt].emoji}{" "}
+            <span className="font-medium text-slate-500 dark:text-slate-300">
+              {shopLocations[effectiveOrt].label}
+            </span>
+            {!detected && " (kannst du oben wählen)"}
+          </p>
+        )}
       </form>
 
       {open.length === 0 && (
