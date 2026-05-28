@@ -50,23 +50,37 @@ automatisch angelegt.
 
 ## Schritt 2 – Auf GitHub Pages veröffentlichen
 
-1. Repo zu GitHub pushen (siehe unten).
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `VITE_API_URL`
-   - Wert: die Web‑App‑URL aus Schritt 1
-   *(ohne Secret läuft die veröffentlichte App im Demo‑Modus)*
-4. Push auf `main` startet automatisch den Deploy. Danach ist die App unter
-   `https://<dein-user>.github.io/<repo-name>/` erreichbar.
+Quellcode liegt auf `main`; veröffentlicht wird der gebaute Stand auf dem `gh-pages`-Branch.
 
-Auf dem Handy: Seite öffnen → Browser‑Menü → **Zum Startbildschirm hinzufügen**.
-
-## .env (lokal mit echtem Backend testen, optional)
+Für die **gemeinsame Nutzung** zuerst die Web‑App‑URL aus Schritt 1 hinterlegen:
 
 ```bash
 cp .env.example .env
-# VITE_API_URL=<deine Web-App-URL>
+# in .env:  VITE_API_URL=<deine Apps-Script-Web-App-URL>
 ```
+
+Dann veröffentlichen:
+
+```bash
+npm run deploy        # baut die App und pusht dist/ nach gh-pages
+```
+
+Danach ist die App unter `https://<dein-user>.github.io/<repo-name>/` erreichbar
+(GitHub Pages-Quelle: `gh-pages`-Branch). Ohne `.env` läuft der veröffentlichte Stand im
+**Demo‑Modus**.
+
+> `npm run deploy` leitet Repo‑Name (Basis‑Pfad) automatisch aus dem git‑Remote ab und legt
+> `404.html` (Deep‑Link‑Fallback) sowie `.nojekyll` an.
+
+Auf dem Handy: Seite öffnen → Browser‑Menü → **Zum Startbildschirm hinzufügen**.
+
+### Optional: Auto‑Deploy via GitHub Actions
+
+Statt `npm run deploy` könnt ihr Pushes auf `main` automatisch deployen. Dazu eine Datei
+`.github/workflows/deploy.yml` über die GitHub‑Weboberfläche anlegen (Actions‑Workflows
+brauchen den `workflow`‑Token‑Scope), Pages‑Quelle auf **GitHub Actions** stellen und die
+URL als Repo‑Secret `VITE_API_URL` hinterlegen. Eine fertige Workflow‑Vorlage liegt der
+Projekt‑Historie bei bzw. kann auf Anfrage erzeugt werden.
 
 ## Projektstruktur
 
