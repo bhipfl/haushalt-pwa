@@ -39,6 +39,7 @@ function normDate(v?: string): string | undefined {
 
 function normalize(data: AppData): AppData {
   data.shopping?.forEach((s) => (s.createdAt = normDate(s.createdAt) as string));
+  data.contributions?.forEach((c) => (c.ersteFaelligkeit = normDate(c.ersteFaelligkeit)));
   data.fixedCosts?.forEach((f) => (f.ersteFaelligkeit = normDate(f.ersteFaelligkeit) as string));
   data.potLedger?.forEach((p) => (p.datum = normDate(p.datum) as string));
   data.tasks?.forEach((t) => {

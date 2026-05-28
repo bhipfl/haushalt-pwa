@@ -40,7 +40,7 @@ export function DashboardPage() {
       <Link to="/konto">
         <Card className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400">Monatsbilanz Gemeinschaftskonto</p>
+            <p className="text-xs text-slate-400">Ein &amp; Aus · diesen Monat</p>
             <p
               className={
                 "text-2xl font-bold " +
@@ -51,7 +51,7 @@ export function DashboardPage() {
               {eur(bal.rest)}
             </p>
             <p className="text-xs text-slate-400">
-              {eurCompact(bal.income)} ein · {eurCompact(bal.fixed + bal.reserves)} verplant
+              {eurCompact(bal.income)} rein · {eurCompact(bal.fixed + bal.konsum)} verplant
             </p>
           </div>
           <ChevronRight className="text-slate-300" />
@@ -126,7 +126,7 @@ export function DashboardPage() {
       <Link to="/konto" className="block">
         <Card className="flex items-center gap-3">
           <Wallet size={18} className="text-slate-400" />
-          <span className="text-sm font-medium">Gemeinschaftskonto & Budget öffnen</span>
+          <span className="text-sm font-medium">Ein &amp; Aus öffnen</span>
           <ChevronRight className="ml-auto text-slate-300" />
         </Card>
       </Link>

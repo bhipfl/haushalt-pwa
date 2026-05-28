@@ -20,7 +20,7 @@ const SCHEMAS = {
     ["id", "s"], ["name", "s"], ["ort", "s"], ["menge", "s"],
     ["erledigt", "b"], ["addedBy", "s"], ["recurring", "b"], ["createdAt", "s"],
   ],
-  Contributions: [["id", "s"], ["person", "s"], ["label", "s"], ["betrag", "n"], ["rhythmus", "s"]],
+  Contributions: [["id", "s"], ["person", "s"], ["label", "s"], ["betrag", "n"], ["rhythmus", "s"], ["ersteFaelligkeit", "s"]],
   FixedCosts: [
     ["id", "s"], ["name", "s"], ["typ", "s"], ["betrag", "n"], ["rhythmus", "s"],
     ["ersteFaelligkeit", "s"], ["kategorie", "s"], ["aktiv", "b"], ["notiz", "s"],

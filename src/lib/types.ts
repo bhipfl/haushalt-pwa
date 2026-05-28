@@ -45,6 +45,8 @@ export interface Contribution {
   label: string;
   betrag: number;
   rhythmus: Cadence;
+  /** Optional: wann das Geld (erstmals) reinkommt, fuer die Geldfluss-Timeline. */
+  ersteFaelligkeit?: string; // yyyy-MM-dd
 }
 
 export type FixedCostType = "fixkosten" | "ruecklage";

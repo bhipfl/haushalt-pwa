@@ -8,20 +8,21 @@ export const sumMonthly = (items: FixedCost[]) =>
   items.filter((f) => f.aktiv).reduce((s, f) => s + monthlyAmount(f.betrag, f.rhythmus), 0);
 
 export const fixkosten = (data: AppData) => data.fixedCosts.filter((f) => f.typ === "fixkosten");
-export const ruecklagen = (data: AppData) => data.fixedCosts.filter((f) => f.typ === "ruecklage");
+/** Konsum-Budgets (Lebensmittel, Freizeit, Puffer …). Intern weiter als typ "ruecklage" gespeichert. */
+export const konsum = (data: AppData) => data.fixedCosts.filter((f) => f.typ === "ruecklage");
 
 export interface MonthlyBalance {
   income: number;
   fixed: number;
-  reserves: number;
+  konsum: number;
   rest: number;
 }
 
 export function monthlyBalance(data: AppData): MonthlyBalance {
   const income = sumMonthlyContributions(data.contributions);
   const fixed = sumMonthly(fixkosten(data));
-  const reserves = sumMonthly(ruecklagen(data));
-  return { income, fixed, reserves, rest: income - fixed - reserves };
+  const k = sumMonthly(konsum(data));
+  return { income, fixed, konsum: k, rest: income - fixed - k };
 }
 
 export const potBalance = (ledger: PotEntry[], ruecklageId: string) =>
@@ -47,6 +48,38 @@ export function upcomingDebits(data: AppData, days: number): Debit[] {
 /** Naechste Abbuchung je Fixkostenposten (fuer Listenansicht). */
 export function nextDebit(fc: FixedCost): string {
   return nextOccurrence(fc.ersteFaelligkeit, fc.rhythmus);
+}
+
+export interface Flow {
+  kind: "in" | "out";
+  label: string;
+  sub?: string;
+  /** Vorzeichenbehaftet: rein > 0, raus < 0. */
+  betrag: number;
+  datum: string;
+}
+
+/**
+ * Geldfluss der naechsten `days` Tage, chronologisch:
+ * Einnahmen (rein) + Fixkosten-Abbuchungen (raus). Konsum-Budgets sind keine
+ * datierten Buchungen und tauchen hier bewusst nicht auf.
+ */
+export function upcomingFlows(data: AppData, days: number): Flow[] {
+  const out: Flow[] = [];
+  for (const c of data.contributions) {
+    if (!c.ersteFaelligkeit) continue;
+    const who = data.members.find((m) => m.id === c.person)?.name;
+    for (const datum of occurrencesWithin(c.ersteFaelligkeit, c.rhythmus, days)) {
+      out.push({ kind: "in", label: c.label, sub: who, betrag: c.betrag, datum });
+    }
+  }
+  for (const f of data.fixedCosts) {
+    if (!f.aktiv || f.typ !== "fixkosten") continue;
+    for (const datum of occurrencesWithin(f.ersteFaelligkeit, f.rhythmus, days)) {
+      out.push({ kind: "out", label: f.name, betrag: -f.betrag, datum });
+    }
+  }
+  return out.sort((a, b) => a.datum.localeCompare(b.datum));
 }
 
 /** Saldo der privaten Auslagen je Person (nicht erstattet). */

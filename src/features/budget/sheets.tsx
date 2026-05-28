@@ -57,7 +57,7 @@ function FixedCostForm({ item, isNew, onClose }: { item: FixedCost; isNew: boole
     <Sheet
       open
       onClose={onClose}
-      title={`${istRuecklage ? "Rücklage" : "Fixkosten"} ${isNew ? "hinzufügen" : "bearbeiten"}`}
+      title={`${istRuecklage ? "Konsum-Budget" : "Fixkosten"} ${isNew ? "hinzufügen" : "bearbeiten"}`}
     >
       <form onSubmit={save} className="space-y-3">
         <Field label="Name">
@@ -65,11 +65,11 @@ function FixedCostForm({ item, isNew, onClose }: { item: FixedCost; isNew: boole
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
-            placeholder={istRuecklage ? "z. B. Lebensmittel" : "z. B. Miete"}
+            placeholder={istRuecklage ? "z. B. Lebensmittel, Freizeit, Puffer" : "z. B. Miete"}
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Betrag (€)">
+          <Field label={istRuecklage ? "Betrag (€)" : "Betrag (€)"}>
             <NumberInput value={betrag} onChange={(e) => setBetrag(e.target.value)} placeholder="0,00" />
           </Field>
           <Field label="Rhythmus">
@@ -82,12 +82,21 @@ function FixedCostForm({ item, isNew, onClose }: { item: FixedCost; isNew: boole
             </SelectInput>
           </Field>
         </div>
-        <Field label={istRuecklage ? "Start ab" : "Nächste / erste Fälligkeit"}>
-          <DateInput value={datum} onChange={(e) => setDatum(e.target.value)} />
-        </Field>
-        <Field label="Kategorie (optional)">
-          <TextInput value={kategorie} onChange={(e) => setKategorie(e.target.value)} placeholder="z. B. Wohnen" />
-        </Field>
+        {istRuecklage ? (
+          <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800">
+            Eingeplanter Konsum pro Monat – z. B. Lebensmittel, Freizeit oder ein Puffer. Keine
+            Buchführung, nur die Planung „so viel ist dafür vorgesehen".
+          </p>
+        ) : (
+          <>
+            <Field label="Nächste / erste Fälligkeit">
+              <DateInput value={datum} onChange={(e) => setDatum(e.target.value)} />
+            </Field>
+            <Field label="Kategorie (optional)">
+              <TextInput value={kategorie} onChange={(e) => setKategorie(e.target.value)} placeholder="z. B. Wohnen" />
+            </Field>
+          </>
+        )}
         <Field label="Notiz (optional)">
           <TextArea value={notiz} onChange={(e) => setNotiz(e.target.value)} />
         </Field>
@@ -126,12 +135,20 @@ function ContributionForm({ item, isNew, onClose }: { item: Contribution; isNew:
   const [label, setLabel] = useState(item.label);
   const [betrag, setBetrag] = useState(item.betrag ? String(item.betrag) : "");
   const [rhythmus, setRhythmus] = useState(item.rhythmus);
+  const [datum, setDatum] = useState(item.ersteFaelligkeit ?? "");
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     mutate.mutate({
       action: isNew ? "contributions.add" : "contributions.update",
-      payload: { ...item, person, label: label.trim() || "Beitrag", betrag: parseAmount(betrag), rhythmus },
+      payload: {
+        ...item,
+        person,
+        label: label.trim() || "Beitrag",
+        betrag: parseAmount(betrag),
+        rhythmus,
+        ersteFaelligkeit: datum || undefined,
+      },
     });
     onClose();
   };
@@ -141,7 +158,7 @@ function ContributionForm({ item, isNew, onClose }: { item: Contribution; isNew:
   };
 
   return (
-    <Sheet open onClose={onClose} title={`Einzahlung ${isNew ? "hinzufügen" : "bearbeiten"}`}>
+    <Sheet open onClose={onClose} title={`Einnahme ${isNew ? "hinzufügen" : "bearbeiten"}`}>
       <form onSubmit={save} className="space-y-3">
         <Field label="Person">
           <SelectInput value={person} onChange={(e) => setPerson(e.target.value)}>
@@ -153,7 +170,7 @@ function ContributionForm({ item, isNew, onClose }: { item: Contribution; isNew:
           </SelectInput>
         </Field>
         <Field label="Bezeichnung">
-          <TextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z. B. Fixbeitrag" />
+          <TextInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="z. B. Fixbeitrag, Gehalt" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Betrag (€)">
@@ -169,6 +186,10 @@ function ContributionForm({ item, isNew, onClose }: { item: Contribution; isNew:
             </SelectInput>
           </Field>
         </div>
+        <Field label="Kommt an (optional)">
+          <DateInput value={datum} onChange={(e) => setDatum(e.target.value)} />
+          <p className="mt-1 text-xs text-slate-400">Für die Geldfluss-Timeline – wann das Geld reinkommt.</p>
+        </Field>
         <div className="flex gap-2 pt-1">
           {!isNew && (
             <Button type="button" variant="subtle" onClick={remove} className="flex-1">
