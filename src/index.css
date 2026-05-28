@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-100 text-slate-900 antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+/* Safe-Area fuer Notch-Geraete */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Eingabefelder ohne haessliche Standard-Optik */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-white/10;
+  }
+  .field {
+    @apply w-full rounded-xl border-0 bg-slate-100 px-3.5 py-3 text-base text-slate-900 outline-none ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500 dark:bg-slate-800 dark:text-slate-100 dark:ring-white/10;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300;
+  }
+}
+
+/* dezente Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300 dark:bg-slate-700;
+}
