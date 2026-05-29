@@ -26,6 +26,8 @@ export function useMutate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (op: Op) => backend.mutate(pin as string, op),
+    // Optimistisch sofort anwenden – die UI fuehlt sich instant an, auch bei
+    // mehreren schnellen Aenderungen hintereinander.
     onMutate: async (op) => {
       await qc.cancelQueries({ queryKey: APPDATA_KEY });
       const prev = qc.getQueryData<AppData>(APPDATA_KEY);
@@ -35,8 +37,16 @@ export function useMutate() {
     onError: (_e, _op, ctx) => {
       if (ctx?.prev) qc.setQueryData(APPDATA_KEY, ctx.prev);
     },
-    onSuccess: (data) => {
-      qc.setQueryData(APPDATA_KEY, data);
+    // WICHTIG: Die Server-Antwort einer einzelnen Mutation ist nur eine
+    // Momentaufnahme und enthaelt parallele Aenderungen evtl. noch nicht.
+    // Wuerde man sie direkt in den Cache schreiben, koennte eine aeltere
+    // Antwort eine neuere (optimistische) Aenderung ueberschreiben -> nur die
+    // erste Aenderung "haelt". Daher NICHT die Antwort uebernehmen, sondern
+    // erst wenn die letzte laufende Mutation fertig ist EINMAL frisch laden.
+    onSettled: () => {
+      if (qc.isMutating() === 1) {
+        qc.invalidateQueries({ queryKey: APPDATA_KEY });
+      }
     },
   });
 }
