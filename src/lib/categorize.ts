@@ -81,7 +81,8 @@ const KEYWORDS: Record<ShopLocation, string[]> = {
   sonstiges: [],
 };
 
-function normalize(s: string): string {
+/** Normalisiert einen Namen fuer Vergleich/Lern-Schluessel (klein, ohne Umlaute/Sonderzeichen). */
+export function normalizeName(s: string): string {
   return s
     .toLowerCase()
     .replace(/ä/g, "a")
@@ -96,11 +97,11 @@ function normalize(s: string): string {
 // Stichwoerter vorab normalisieren (einmalig).
 const NORM_KEYWORDS: { loc: ShopLocation; kw: string }[] = (
   Object.keys(KEYWORDS) as ShopLocation[]
-).flatMap((loc) => KEYWORDS[loc].map((kw) => ({ loc, kw: normalize(kw) })));
+).flatMap((loc) => KEYWORDS[loc].map((kw) => ({ loc, kw: normalizeName(kw) })));
 
 /** Rät die Abteilung anhand des Namens. null = nichts erkannt. */
 export function guessLocation(raw: string): ShopLocation | null {
-  const s = normalize(raw);
+  const s = normalizeName(raw);
   if (!s) return null;
   let best: { loc: ShopLocation; len: number } | null = null;
   for (const { loc, kw } of NORM_KEYWORDS) {
@@ -109,4 +110,25 @@ export function guessLocation(raw: string): ShopLocation | null {
     }
   }
   return best ? best.loc : null;
+}
+
+/**
+ * Trennt eine Eingabe in mehrere Artikel (Komma/Zeilenumbruch) und erkennt je
+ * Artikel eine fuehrende Menge, z. B. "2 L Milch" -> { name: "Milch", menge: "2 L" }.
+ */
+export function parseItems(raw: string): { name: string; menge?: string }[] {
+  return raw
+    .split(/[,\n;]+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map(parseOne);
+}
+
+function parseOne(s: string): { name: string; menge?: string } {
+  // fuehrende Zahl (+ optionale Einheit/Stueck) als Menge abtrennen
+  const m = s.match(/^(\d+(?:[.,]\d+)?\s*[a-zA-Zäöü]{0,5}\.?)\s+(.+)$/);
+  if (m && m[2].trim()) {
+    return { name: m[2].trim(), menge: m[1].trim().replace(/\s+/g, " ") };
+  }
+  return { name: s };
 }

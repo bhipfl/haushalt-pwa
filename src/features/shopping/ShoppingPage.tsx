@@ -5,7 +5,8 @@ import { useAuth } from "../../lib/auth";
 import { newId } from "../../lib/id";
 import { todayISO } from "../../lib/recurrence";
 import { shopLocationOrder, shopLocations } from "../../lib/constants";
-import { guessLocation } from "../../lib/categorize";
+import { parseItems } from "../../lib/categorize";
+import { resolveLocation, learnLocation } from "../../lib/learn";
 import type { ShoppingItem, ShopLocation } from "../../lib/types";
 import { Button, EmptyState, IconButton } from "../../components/ui";
 import { Dot } from "../../components/Avatar";
@@ -26,7 +27,8 @@ export function ShoppingPage() {
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [showDone, setShowDone] = useState(false);
 
-  const detected = guessLocation(name);
+  const parts = parseItems(name);
+  const detected = parts[0] ? resolveLocation(parts[0].name) : null;
   const effectiveOrt: ShopLocation = ortChoice === "auto" ? detected ?? "sonstiges" : ortChoice;
 
   const open = data.shopping.filter((s) => !s.erledigt);
@@ -45,20 +47,25 @@ export function ShoppingPage() {
 
   const add = (e: React.FormEvent) => {
     e.preventDefault();
-    const n = name.trim();
-    if (!n) return;
+    const items = parseItems(name);
+    if (!items.length) return;
     localStorage.setItem(LAST_ORT, ortChoice);
-    mutate.mutate({
-      action: "shopping.add",
-      payload: {
-        id: newId(),
-        name: n,
-        ort: effectiveOrt,
-        erledigt: false,
-        addedBy: memberId ?? undefined,
-        createdAt: todayISO(),
-      },
-    });
+    for (const { name: itemName, menge } of items) {
+      const ort: ShopLocation =
+        ortChoice === "auto" ? resolveLocation(itemName) ?? "sonstiges" : ortChoice;
+      mutate.mutate({
+        action: "shopping.add",
+        payload: {
+          id: newId(),
+          name: itemName,
+          menge,
+          ort,
+          erledigt: false,
+          addedBy: memberId ?? undefined,
+          createdAt: todayISO(),
+        },
+      });
+    }
     setName("");
   };
 
@@ -75,7 +82,7 @@ export function ShoppingPage() {
             list="shop-suggestions"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Was fehlt?"
+            placeholder="Was fehlt? (mehrere mit Komma)"
             className="field flex-1"
           />
           <Button type="submit" aria-label="Hinzufügen" disabled={!name.trim()} className="px-4">
@@ -98,12 +105,21 @@ export function ShoppingPage() {
             </option>
           ))}
         </SelectInput>
-        {ortChoice === "auto" && name.trim() && (
+        {name.trim() && parts.length > 1 && (
+          <p className="px-1 text-xs text-slate-400">
+            ✨ {parts.length} Artikel
+            {ortChoice === "auto"
+              ? " – je automatisch einsortiert"
+              : ` → ${shopLocations[effectiveOrt].label}`}
+          </p>
+        )}
+        {name.trim() && parts.length === 1 && ortChoice === "auto" && (
           <p className="px-1 text-xs text-slate-400">
             {detected ? "Kommt in" : "Nicht erkannt →"} {shopLocations[effectiveOrt].emoji}{" "}
             <span className="font-medium text-slate-500 dark:text-slate-300">
               {shopLocations[effectiveOrt].label}
             </span>
+            {parts[0]?.menge && ` · Menge ${parts[0].menge}`}
             {!detected && " (kannst du oben wählen)"}
           </p>
         )}
@@ -232,9 +248,12 @@ function EditSheetInner({
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalName = name.trim() || item.name;
+    // Manuelle Korrektur der Abteilung -> fuer naechstes Mal lernen.
+    if (ort !== item.ort) learnLocation(finalName, ort);
     mutate.mutate({
       action: "shopping.update",
-      payload: { ...item, name: name.trim() || item.name, menge: menge.trim() || undefined, ort, recurring },
+      payload: { ...item, name: finalName, menge: menge.trim() || undefined, ort, recurring },
     });
     onClose();
   };
