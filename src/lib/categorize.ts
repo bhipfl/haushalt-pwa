@@ -25,7 +25,7 @@ const KEYWORDS: Record<ShopLocation, string[]> = {
     "bagel", "ciabatta", "fladenbrot", "muffin", "donut", "laugenstange", "körnerbrötchen",
   ],
   kuehlregal: [
-    "milch", "buttermilch", "butter", "käse", "joghurt", "jogurt", "quark", "sahne", "schmand",
+    "milch", "buttermilch", "butter", "käse", "joghurt", "jogurt", "skyr", "quark", "sahne", "schmand",
     "crème fraîche", "creme fraiche", "frischkäse", "mozzarella", "feta", "gouda", "parmesan",
     "hüttenkäse", "mascarpone", "ricotta", "margarine", "eier", "wurst", "schinken", "salami",
     "aufschnitt", "fleisch", "hackfleisch", "hähnchen", "hühnchen", "pute", "rind", "schwein",
@@ -49,7 +49,8 @@ const KEYWORDS: Record<ShopLocation, string[]> = {
   ],
   konserven: [
     "dose", "konserve", "mais", "kidneybohnen", "thunfisch", "sardinen", "sauerkraut",
-    "oliven", "antipasti", "gewürzgurken", "rotkohl", "kichererbsen dose", "ananas dose",
+    "oliven", "antipasti", "gewürzgurken", "essiggurke", "essiggurken", "saure gurken",
+    "cornichons", "rotkohl", "kichererbsen dose", "ananas dose",
   ],
   suesses: [
     "schokolade", "schoko", "riegel", "müsliriegel", "keks", "kekse", "gummibärchen", "bonbon",
@@ -117,18 +118,37 @@ export function guessLocation(raw: string): ShopLocation | null {
  * Artikel eine fuehrende Menge, z. B. "2 L Milch" -> { name: "Milch", menge: "2 L" }.
  */
 export function parseItems(raw: string): { name: string; menge?: string }[] {
+  // Trennen bei Zeilenumbruch/Semikolon und bei Komma – aber NICHT bei einem
+  // Dezimalkomma ("1,5"): Komma nur als Trenner, wenn keine Ziffer folgt.
   return raw
-    .split(/[,\n;]+/)
+    .split(/[\n;]+|,(?!\d)/)
     .map((p) => p.trim())
     .filter(Boolean)
     .map(parseOne);
 }
 
+// Bekannte Mengen-Einheiten (sonst wird das Wort als Teil des Namens behandelt).
+const UNITS = new Set([
+  "l", "ml", "cl", "dl", "liter", "g", "gr", "kg", "gramm", "kilo",
+  "stk", "stück", "stueck", "st", "x", "dose", "dosen", "glas", "gläser",
+  "flasche", "flaschen", "packung", "packungen", "pkg", "pck", "pkt", "pack",
+  "bund", "becher", "tüte", "tuete", "rolle", "rollen", "tafel", "tafeln",
+]);
+
 function parseOne(s: string): { name: string; menge?: string } {
-  // fuehrende Zahl (+ optionale Einheit/Stueck) als Menge abtrennen
-  const m = s.match(/^(\d+(?:[.,]\d+)?\s*[a-zA-Zäöü]{0,5}\.?)\s+(.+)$/);
-  if (m && m[2].trim()) {
-    return { name: m[2].trim(), menge: m[1].trim().replace(/\s+/g, " ") };
+  // Fuehrende Zahl?
+  const m = s.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+  if (!m) return { name: s };
+  const num = m[1];
+  const rest = m[2].trim();
+  if (!rest) return { name: s }; // nur eine Zahl -> als Name lassen
+
+  // Erstes Wort des Rests = bekannte Einheit? (auch "500g": Rest beginnt mit "g")
+  const tokens = rest.split(/\s+/);
+  const firstUnit = tokens[0].toLowerCase().replace(/[.,]$/, "");
+  if (tokens.length >= 2 && UNITS.has(firstUnit)) {
+    return { menge: `${num} ${tokens[0]}`.trim(), name: tokens.slice(1).join(" ") };
   }
-  return { name: s };
+  // Keine Einheit -> Zahl ist die Menge, der Rest der Name.
+  return { menge: num, name: rest };
 }
